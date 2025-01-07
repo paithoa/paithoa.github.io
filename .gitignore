@@ -24,5 +24,9 @@ public
 
 npm-debug.log*
 yarn-debug.log*
+<<<<<<< HEAD
 yarn-error.log*
 package-lock.json
+=======
+yarn-error.log*
+>>>>>>> 0a4d55d1505996bae8ae5dd9b9b29e68a2130d17
