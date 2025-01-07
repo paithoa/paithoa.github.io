@@ -22,13 +22,15 @@ jobs:
       run: npm install
 
     - name: Create .env.production
-      run: echo "GATSBY_GITHUB_TOKEN=${{ secrets.MY_GITHUB_TOKEN }}" > .env.production
+      run: echo "GATSBY_GITHUB_TOKEN=${{ secrets.GATSBY_GITHUB_TOKEN }}" > .env.production
 
     - name: Build the site
       run: npm run build
+      env:
+        GATSBY_GITHUB_TOKEN: ${{ secrets.GATSBY_GITHUB_TOKEN }}
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
-        github_token: ${{ secrets.MY_GITHUB_TOKEN }}
+        github_token: ${{ secrets.GATSBY_GITHUB_TOKEN }}
         publish_dir: ./public
