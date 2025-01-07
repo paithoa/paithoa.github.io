@@ -16,7 +16,7 @@ export default function IndexPage() {
       <Seo title="Gatsby Starter for Portfolio Minimal" />
       <Page useSplashScreenAnimation>
         <HeroSection sectionId="hero" />
-        <ArticlesSection sectionId="articles" heading="Latest Articles" sources={['Medium']} />
+        <ArticlesSection sectionId="articles" heading="Latest Project" sources={['Medium']} />
       </Page>
     </>
   );

@@ -1,120 +1,128 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Animation } from '../../components/Animation';
 import { Section } from '../../components/Section';
-import { Slider } from '../../components/Slider';
 import { ArticleCard, ArticleCardSkeleton } from '../../components/ArticleCard';
-import { useSiteMetadata } from '../../hooks/useSiteMetadata';
-import { useLocalDataSource, useMediumFeed } from './data';
-import { PageSection } from '../../types';
 import * as classes from './style.module.css';
 
-enum ArticleSource {
-    Medium = 'medium',
-    Blog = 'blog',
+// GitHub API Fetch function (supports pagination)
+async function fetchGitHubData(): Promise<any[]> {
+    const token = "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";
+    const username = "paithoa";
+    const repoList: any[] = [];
+    let page = 1;
+    let isLastPage = false;
+
+    // Fetch all pages of repos from GitHub API
+    while (!isLastPage) {
+        const response = await fetch(`https://api.github.com/users/${username}/repos?per_page=100&page=${page}`, {
+            headers: {
+                Authorization: `Bearer ${token}`, // Send the token as the Authorization header
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch data from GitHub');
+        }
+
+        const repos = await response.json();
+
+        // Push fetched repositories to the repoList
+        repoList.push(...repos);
+
+        // Check if it's the last page
+        isLastPage = repos.length < 100;
+        page++;
+    }
+
+    return repoList;
 }
 
-interface ArticleSourceConfiguration {
-    [ArticleSource.Medium]?: {
-        profileUrl: string;
-    };
-    [ArticleSource.Blog]?: {
-        valid: boolean;
-    };
-}
+interface ArticlesSectionProps {}
 
-interface ArticlesSectionProps extends PageSection {
-    sources: ArticleSource[];
-}
-
-export function ArticlesSection(props: ArticlesSectionProps): React.ReactElement {
-    const response = useLocalDataSource();
+export function ArticlesSection(): React.ReactElement {
     const [articles, setArticles] = React.useState<ArticleCard[]>([]);
-    const configuration = validateAndConfigureSources(props.sources);
+    const [loading, setLoading] = React.useState(true);
 
-    async function collectArticlesFromSources(configuration: ArticleSourceConfiguration): Promise<ArticleCard[]> {
-        const mediumConfig = configuration[ArticleSource.Medium];
-        const blogConfig = configuration[ArticleSource.Blog];
-        const articleList: ArticleCard[] = [];
+    const sliderRef = useRef<HTMLDivElement | null>(null);
+    const [isMouseDown, setIsMouseDown] = useState(false);
+    const [startX, setStartX] = useState(0);
+    const [scrollLeft, setScrollLeft] = useState(0);
 
-        if (mediumConfig !== undefined) {
-            const mediumArticles = await useMediumFeed(mediumConfig.profileUrl);
-            if (mediumArticles.length > 0) {
-                mediumArticles.forEach((article) => {
-                    articleList.push({
-                        category: article.categories[0],
-                        title: article.title,
-                        publishedAt: new Date(article.pubDate.replace(/-/g, '/')), // https://stackoverflow.com/a/5646753
-                        link: article.link,
-                    });
-                });
-            }
-        }
+    async function collectArticlesFromGitHub(): Promise<ArticleCard[]> {
+        const githubData = await fetchGitHubData();
 
-        if (blogConfig !== undefined) {
-            const blogArticles = response.allArticle.articles;
-            if (blogArticles.length > 0) {
-                blogArticles.forEach((article) => {
-                    articleList.push({
-                        category: article.categories[0],
-                        title: article.title,
-                        publishedAt: new Date(article.date.replace(/-/g, '/')),
-                        link: article.slug,
-                        readingTime: article.readingTime.text,
-                    });
-                });
-            }
-        }
-
-        return articleList.slice().sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime());
+        return githubData
+            .map((repo) => ({
+                category: repo.language || 'No Language',
+                title: repo.name,
+                publishedAt: new Date(repo.created_at),
+                link: repo.html_url,
+                description: repo.description || 'No description available',
+            }))
+            .sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime()); // Sort in descending order by publishedAt
     }
 
     React.useEffect(() => {
         (async function () {
-            setArticles(await collectArticlesFromSources(configuration));
+            try {
+                const fetchedArticles = await collectArticlesFromGitHub();
+                setArticles(fetchedArticles);
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
         })();
     }, []);
 
+    // Handle mouse down event
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (sliderRef.current) {
+            setIsMouseDown(true);
+            setStartX(e.clientX);
+            setScrollLeft(sliderRef.current.scrollLeft);
+        }
+    };
+
+    // Handle mouse leave event
+    const handleMouseLeave = () => {
+        setIsMouseDown(false);
+    };
+
+    // Handle mouse up event
+    const handleMouseUp = () => {
+        setIsMouseDown(false);
+    };
+
+    // Handle mouse move event to simulate dragging
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isMouseDown || !sliderRef.current) return;
+
+        const distance = e.clientX - startX;
+        sliderRef.current.scrollLeft = scrollLeft - distance;
+    };
+
     return (
         <Animation type="fadeUp" delay={1000}>
-            <Section anchor={props.sectionId} heading={props.heading}>
-                <Slider additionalClasses={[classes.Articles]}>
-                    {articles.length > 0
-                        ? articles.slice(0, 3).map((article, key) => {
-                              return <ArticleCard key={key} data={article} />;
-                          })
-                        : [...Array(3)].map((_, key) => {
-                              return <ArticleCardSkeleton key={key} />;
-                          })}
-                </Slider>
+            <Section anchor="articles" heading="Latest GitHub Repositories">
+                <div
+                    ref={sliderRef}
+                    className={classes.ArticlesSlider}
+                    onMouseDown={handleMouseDown}
+                    onMouseLeave={handleMouseLeave}
+                    onMouseUp={handleMouseUp}
+                    onMouseMove={handleMouseMove}
+                    style={{ cursor: isMouseDown ? 'grabbing' : 'grab' }}
+                >
+                    {loading
+                        ? [...Array(3)].map((_, key) => <ArticleCardSkeleton key={key} />)
+                        : articles.length > 0
+                        ? articles.map((article, key) => (
+                              <ArticleCard key={key} data={article} />
+                          ))
+                        : <p>No repositories found.</p>}
+                </div>
             </Section>
         </Animation>
     );
-}
-
-// validateAndConfigureSources: Sources for articles can be defined as props (e.g. sources=["Medium"])
-// Currently, only Medium can be used as a source but it is thinkable to extend this approach to other
-// sources (e.g. an integrated Markdown blog). To collect all articles from the source, there is a
-// specific configuration needed for each source type. For example, to collect articles from Medium,
-// we need the profile URL. This function is responsible for validating that at least one source is
-// defined. It than adds the needed configuration properties to each source and returns the config.
-
-function validateAndConfigureSources(sources: ArticleSource[]): ArticleSourceConfiguration {
-    const configuration: ArticleSourceConfiguration = {};
-
-    if (sources.length > 0) {
-        // Configure Medium
-        if (sources.map((i) => i.toLowerCase()).includes(ArticleSource.Medium)) {
-            const siteMetadata = useSiteMetadata();
-            configuration[ArticleSource.Medium] = { profileUrl: siteMetadata.social.medium };
-        }
-
-        // Configure Blog (actually no real configuration is required yet)
-        if (sources.map((i) => i.toLowerCase()).includes(ArticleSource.Blog)) {
-            configuration[ArticleSource.Blog] = { valid: true };
-        }
-    } else {
-        throw new Error('No Source for Articles defined.');
-    }
-
-    return configuration;
 }
