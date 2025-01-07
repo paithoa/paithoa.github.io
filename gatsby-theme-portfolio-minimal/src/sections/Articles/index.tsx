@@ -6,7 +6,7 @@ import * as classes from './style.module.css';
 
 // GitHub API Fetch function (supports pagination)
 async function fetchGitHubData(): Promise<any[]> {
-    const token = process.env.GITHUB_TOKEN;
+    const token = "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"
     const username = "paithoa";
     const repoList: any[] = [];
     let page = 1;
