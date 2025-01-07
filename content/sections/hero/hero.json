@@ -1,22 +1,22 @@
 {
-  "intro": "Hej",
+  "intro": "Hello",
   "heroPhoto": {
-    "src": "../../images/lego-dummy.png",
-    "alt": "My Photo"
+      "src": "../../images/lego-dummy.png",
+      "alt": "My Photo"
   },
   "image": {
-    "src": "../../images/waving-hand.png",
-    "alt": "Waving Hand Emoji"
+      "src": "../../images/waving-hand.png",
+      "alt": "Waving Hand Emoji"
   },
-  "title": "I'm a Gatsby Starter",
+  "title": "Handy Hasan",
   "subtitle": {
-    "prefix": "I do all the setup ",
-    "highlight": "for you",
-    "suffix": "."
+      "prefix": "I'm a Software Engineer at",
+      "highlight": "4DMedical",
+      "suffix": "."
   },
-  "description": "A Gatsby Starter Project to easily get started with Portfolio Minimal theme.",
+  "description": "Expertise in designing, developing, and optimizing software solutions. With a strong foundation in full stack development, I thrive on solving complex problems and delivering user-centric applications",
   "socialProfiles": {
-    "from": ["LinkedIn", "Medium", "Github", "Mail"],
-    "showIcons": false
+      "from": ["LinkedIn", "Github", "Mail"],
+      "showIcons": false
   }
 }
